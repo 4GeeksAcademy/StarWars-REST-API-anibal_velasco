@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planetas, Personajes
+from models import db, User, Planetas, Personajes, Favoritos
 #from models import Person
 
 app = Flask(__name__)
@@ -76,6 +76,29 @@ def get_planeta(planeta_id):
         return jsonify(planeta.serialize()), 200
     else:
         return jsonify({'message': 'Usuario no encontrado'}), 404
+    
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def agregar_planeta_favorito(planet_id):
+    # Obtener el usuario actual (puedes ajustar esta lógica según tu aplicación)
+    user_id = 1  # Suponiendo que el usuario actual tiene el ID 1
+    
+    # Buscar al usuario en la base de datos
+    user = User.query.get(user_id)
+    if user is None:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    # Buscar el planeta en la base de datos
+    planeta = Planetas.query.get(planet_id)
+    if planeta is None:
+        return jsonify({'error': 'Planeta no encontrado'}), 404
+
+    # Crear un nuevo favorito y asociarlo al usuario y al planeta
+    favorito = Favoritos(user_id=user.id, planeta_id=planeta.id)
+    db.session.add(favorito)
+    db.session.commit()
+
+    return jsonify({'message': f'Planeta {planeta.name} agregado a favoritos del usuario {user.name}'}), 200
+        
 #PLANETAS
 
 #PERSONAJES
@@ -90,7 +113,7 @@ def get_personajes():
 
 
 @app.route('/personaje/<int:personaje_id>', methods=['GET'])
-def get_planeta(personaje_id):
+def get_personaje(personaje_id):
     personaje = Personajes.query.get(personaje_id)
 
     if personaje:

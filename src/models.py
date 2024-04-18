@@ -21,6 +21,7 @@ class User(db.Model):
             "id": self.id,
             "name": self.name,
             "email": self.email,
+            "personajes_favoritos": [item.serialize() for item in self.todos_los_favoritos]
             # do not serialize the password, its a security breach
         }
 
@@ -62,23 +63,30 @@ class Personajes(db.Model):
 
 
 
-class Planetas_favoritos(db.Model):
-    __tablename__ = 'planetas_favoritos'
+class Favoritos(db.Model):
+    __tablename__ = 'favoritos'
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = relationship(User, backref = 'todos_los_planetas_favoritos')
+    user = relationship(User, backref = 'todos_los_favoritos')
 
     planeta_id = db.Column(db.Integer, db.ForeignKey('planetas.id'))
     planeta = relationship(Planetas)
 
-
-class Personajes_favoritos(db.Model):
-    __tablename__ = 'personajes_favoritos'
-    id = db.Column(db.Integer, primary_key=True)
-
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = relationship(User, backref = 'todos_los_Personajes_favoritos')
-
     personaje_id = db.Column(db.Integer, db.ForeignKey('personajes.id'))
     personaje = relationship(Personajes)
+
+
+    def serialize(self):
+        return{
+            "id":self.id,
+            "planeta": self.planeta.serialize() if self.planeta else ""  ,
+            "personaje":self.personaje.serialize() if self.personaje else "" 
+        }
+
+    # tabla_de_asociaciones = db.table(
+    #     "tabla_de_asociaciones",
+    #     db.metadata,
+    #     db.column()
+    #     db.column()
+    # )
