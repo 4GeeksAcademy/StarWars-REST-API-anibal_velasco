@@ -9,9 +9,15 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Planetas, Personajes, Favoritos
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
 #from models import Person
 
 app = Flask(__name__)
+app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this!
+jwt = JWTManager(app)
 app.url_map.strict_slashes = False
 
 db_url = os.getenv("DATABASE_URL")
@@ -121,6 +127,37 @@ def get_personaje(personaje_id):
     else:
         return jsonify({'message': 'Usuario no encontrado'}), 404
 #PERSONAJES
+
+
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    # Query your database for email and password
+    user = User.query.filter_by(email=email, password=password).first()
+
+    if user is None:
+        # The user was not found on the database
+        return jsonify({"msg": "Bad email or password"}), 401
+    
+    # Create a new token with the user id inside
+    access_token = create_access_token(identity=user.id)
+    return jsonify({ "token": access_token, "user_id": user.id })
+
+
+@app.route("/user/favorite", methods=["GET"])
+@jwt_required()
+def user_favorite():
+    current_user = get_jwt_identity()
+    if current_user:
+        user_filter = User.query.filter_by(email=current_user).first()
+        if user_filter:
+            return jsonify(user_filter.serialize()), 200
+        else:
+            return jsonify({"message": "User not found"}), 404
+    else:
+        return jsonify({"message": "User identity not found"}), 400
 
 
 
