@@ -21,7 +21,7 @@ class User(db.Model):
             "id": self.id,
             "name": self.name,
             "email": self.email,
-            "personajes_favoritos": [item.serialize() for item in self.todos_los_favoritos]
+            "todos_los_favoritos": [item.serialize() for item in self.todos_los_favoritos]
             # do not serialize the password, its a security breach
         }
 

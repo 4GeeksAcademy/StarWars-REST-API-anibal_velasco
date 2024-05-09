@@ -84,12 +84,12 @@ def get_planeta(planeta_id):
         return jsonify({'message': 'Usuario no encontrado'}), 404
     
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+@jwt_required()
 def agregar_planeta_favorito(planet_id):
     # Obtener el usuario actual (puedes ajustar esta lógica según tu aplicación)
-    user_id = 1  # Suponiendo que el usuario actual tiene el ID 1
-    
+    email = get_jwt_identity()
     # Buscar al usuario en la base de datos
-    user = User.query.get(user_id)
+    user = User.query.filter_by(email = email).first()
     if user is None:
         return jsonify({'error': 'Usuario no encontrado'}), 404
     
@@ -126,6 +126,28 @@ def get_personaje(personaje_id):
         return jsonify(personaje.serialize()), 200
     else:
         return jsonify({'message': 'Usuario no encontrado'}), 404
+    
+@app.route('/favorite/personaje/<int:personaje_id>', methods=['POST'])
+@jwt_required()
+def agregar_personaje_favorito(personaje_id):
+    # Obtener el usuario actual (puedes ajustar esta lógica según tu aplicación)
+    email = get_jwt_identity()
+    # Buscar al usuario en la base de datos
+    user = User.query.filter_by(email = email).first()
+    if user is None:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    # Buscar el planeta en la base de datos
+    personaje = Personajes.query.get(personaje_id)
+    if personaje is None:
+        return jsonify({'error': 'Personaje no encontrado'}), 404
+
+    # Crear un nuevo favorito y asociarlo al usuario y al planeta
+    favorito = Favoritos(user_id=user.id, personaje_id=personaje.id)
+    db.session.add(favorito)
+    db.session.commit()
+
+    return jsonify({'message': f'Persobaje {personaje.name} agregado a favoritos del usuario {user.name}'}), 200
 #PERSONAJES
 
 
@@ -142,7 +164,7 @@ def login():
         return jsonify({"msg": "Bad email or password"}), 401
     
     # Create a new token with the user id inside
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=user.email)
     return jsonify({ "token": access_token, "user_id": user.id })
 
 
@@ -159,6 +181,54 @@ def user_favorite():
     else:
         return jsonify({"message": "User identity not found"}), 400
 
+
+#DELETE
+
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_planeta_favorito(planet_id):
+    # Obtener el usuario actual
+    email = get_jwt_identity()
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    # Buscar el planeta favorito por ID
+    favorito = Favoritos.query.filter_by(user_id=user.id, planeta_id=planet_id).first()
+    if favorito is None:
+        return jsonify({'error': 'Planeta favorito no encontrado'}), 404
+    
+    # Eliminar el planeta favorito de la base de datos
+    db.session.delete(favorito)
+    db.session.commit()
+
+    return jsonify({'message': f'Planeta favorito con ID {planet_id} eliminado correctamente'}), 200
+
+
+@app.route('/favorite/personaje/<int:personaje_id>', methods=['DELETE'])
+@jwt_required()
+def eliminar_personaje_favorito(personaje_id):
+    # Obtener el usuario actual
+    email = get_jwt_identity()
+    user = User.query.filter_by(email=email).first()
+    if user is None:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    # Buscar el personaje favorito por ID
+    favorito = Favoritos.query.filter_by(user_id=user.id, personaje_id=personaje_id).first()
+    if favorito is None:
+        return jsonify({'error': 'Personaje favorito no encontrado'}), 404
+    
+    # Eliminar el personaje favorito de la base de datos
+    db.session.delete(favorito)
+    db.session.commit()
+
+    return jsonify({'message': f'Personaje favorito con ID {personaje_id} eliminado correctamente'}), 200
+
+
+
+#DELETE
 
 
 # this only runs if `$ python src/app.py` is executed
